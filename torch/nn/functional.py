@@ -9,6 +9,7 @@ from . import _functions
 from .modules import utils
 from ._functions.linear import Bilinear
 from ._functions.padding import ConstantPad2d
+from ._functions.vision import Sampler
 from ..autograd import _functions as _autograd_functions
 from torch.autograd import Variable
 from .modules.utils import _single, _pair, _triple
@@ -820,6 +821,10 @@ def upsample_bilinear(input, size=None, scale_factor=None):
     warnings.warn("nn.functional.upsample_bilinear is deprecated. Use nn.functional.upsample instead.")
     return upsample(input, size, scale_factor, mode='bilinear')
 
+def sampler(input, grid, mode='bilinear'):
+    batch_size, channels, in_height, in_width = input.size()
+    # TODO: grid shape_check to NxHxWx2
+    return Sampler.apply(input, grid)
 
 def pad(input, pad, mode='constant', value=0):
     """Pads tensor.

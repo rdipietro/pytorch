@@ -9,6 +9,7 @@
 #include "Handles.h"
 #include "BatchNorm.h"
 #include "Conv.h"
+#include "Sampler.h"
 #include "torch/csrc/cuda/THCP.h"
 #include "../PtrWrapper.h"
 
@@ -154,6 +155,30 @@ extern THCState* state;
     - THTensor* save_var
     - bool training
     - double epsilon
+]]
+
+[[
+  name: cudnn_sampler_forward
+  return: void
+  arguments:
+    - cudnnHandle_t handle
+    - cudnnDataType_t dataType
+    - THTensor* input
+    - THTensor* grid
+    - THTensor* output
+]]
+
+[[
+  name: cudnn_sampler_backward
+  return: void
+  arguments:
+    - cudnnHandle_t handle
+    - cudnnDataType_t dataType
+    - THTensor* input
+    - THTensor* grad_input
+    - THTensor* grid
+    - THTensor* grad_grid
+    - THTensor* grad_output
 ]]
 
 [[
