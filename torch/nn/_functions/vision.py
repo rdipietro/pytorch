@@ -7,6 +7,7 @@ import torch.backends.cudnn as cudnn
 
 class Sampler(Function):
 
+    @staticmethod
     def _enforce_cudnn(input):
         if not cudnn.enabled:
             raise RuntimeError("Sampler needs CuDNN for processing CUDA inputs,"
@@ -17,13 +18,15 @@ class Sampler(Function):
     def forward(ctx, input, grid):
         ctx.save_for_backward(input, grid)
         if input.is_cuda:
-            _enforce_cudnn(input)
+            Sampler._enforce_cudnn(input)
             output = input.new(input.size())
             grid = grid.contiguous()
             torch._C._cudnn_sampler_forward(input, grid, output)
-            return output
         else:
-            raise RuntimeError("CPU Tensors not supported yet")
+            backend = type2backend[type(input)]
+            output = input.new(input.size())
+            backend.SpatialGridSamplerBilinear_updateOutput(backend.library_state, input, grid, output)
+        return output
 
     @staticmethod
     @once_differentiable
@@ -31,7 +34,7 @@ class Sampler(Function):
         input, grid = ctx.saved_tensors
         grid = grid.contiguous()
         if input.is_cuda:
-            _enforce_cudnn(input)
+            Sampler._enforce_cudnn(input)
             grad_input = input.new(input.size())
             grad_grid = grid.new(grid.size())
             torch._C._cudnn_sampler_forward(input, grad_input,
