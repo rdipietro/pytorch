@@ -27,6 +27,9 @@ static inline void THNN_(SpatialGridSamplerBilinear_shapeCheck)
   }
 }
 
+#define SAFE_GET(input, x, y, n, c, H, W) x >= 0 && x < W && y >=0 \
+    && y < H ? THTensor_fastGet4d(input, n, c, y, x) : 0
+
 TH_API void THNN_(SpatialGridSamplerBilinear_updateOutput)(
 	  THNNState *state,
 	  THTensor *input,
@@ -77,22 +80,18 @@ TH_API void THNN_(SpatialGridSamplerBilinear_updateOutput)(
 	  
 	// calculate bilinear weighted pixel value and set output pixel
 	for (c = 0; c < C; ++c) {
-	  real out_val = 0.0;
-	  if (ix_ne >= 0 && ix_nw < W && iy_se >= 0 && iy_nw < H) {
-	    //   (c, iy_nw, ix_nw) * nw + (c, iy_ne, ix_ne) * ne
-	    // + (c, iy_sw, ix_sw) * sw + (c, iy_se, ix_se) * se
-	    real nw_val =                                        THTensor_fastGet4d(input, n, c, iy_nw, ix_nw);
-	    real ne_val = ix_ne <= (W - 1) ?                     THTensor_fastGet4d(input, n, c, iy_ne, ix_ne) : 0;
-	    real sw_val = iy_ne <= (H - 1) ?                     THTensor_fastGet4d(input, n, c, iy_sw, ix_sw) : 0;
-	    real se_val = iy_se <= (H - 1) && ix_se <= (W - 1) ? THTensor_fastGet4d(input, n, c, iy_se, ix_se) : 0;
-	    out_val = nw_val * nw + ne_val * ne + sw_val * sw + se_val * se;
-	  }
+	  //   (c, iy_nw, ix_nw) * nw + (c, iy_ne, ix_ne) * ne
+	  // + (c, iy_sw, ix_sw) * sw + (c, iy_se, ix_se) * se
+	  real nw_val = SAFE_GET(input, ix_nw, iy_nw, n, c, H, W);
+	  real ne_val = SAFE_GET(input, ix_ne, iy_ne, n, c, H, W);
+	  real sw_val = SAFE_GET(input, ix_sw, iy_sw, n, c, H, W);
+	  real se_val = SAFE_GET(input, ix_se, iy_se, n, c, H, W);
+	  real out_val = nw_val * nw + ne_val * ne + sw_val * sw + se_val * se;
 	  THTensor_fastSet4d(output, n, c, h, w, out_val);
 	}
       }
     }
   }
-  
 }
 
 TH_API void THNN_(SpatialGridSamplerBilinear_updateGradInput)(
@@ -117,5 +116,6 @@ TH_API void THNN_(SpatialGridSamplerBilinear_updateGradInput)(
 }
 
 #undef MIN
+#undef SAFE_GET
 
 #endif
